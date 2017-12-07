@@ -1,0 +1,175 @@
+﻿@using System;
+@using System.Linq;
+@using Ext.Net;
+@using Ext.Net.MVC;
+@using System.Web;
+@using System.Web.Mvc;
+
+@model Admin.ViewModels.MainViewModel
+
+@{
+    var X = Ext.Net.Html.X();
+    bool UserCanEdit = Authentication.UserIsSysadmin;
+}
+
+<script type="text/javascript">
+
+    
+    function TabDocType_GetSelectedId() {
+        var sel = App.TabDocType_grid.getSelectionModel().getSelection();
+        if (sel.length > 0)
+            return sel[0].get("DocTypeId");
+        else
+            return -1;
+    }
+
+
+    function TabDocType_Edit() {
+        var id = TabDocType_GetSelectedId();
+        if (id > 0) {
+            Ext.net.Mask.show();
+            Ext.net.DirectMethod.request(
+                {
+                    url: "/Admin/DocType/OpenExisting",
+                    params: {
+                        id: id,
+                        onCloseClientScript: "TabDocType_Refresh();"
+                    },
+                    success: function (result) { Ext.net.Mask.hide(); },
+                    failure: function (errorMessage) { Ext.net.Mask.hide(); Ext.Msg.alert('Ошибка', errorMessage); }
+                });
+        }
+        else {
+            Ext.MessageBox.alert('Внимание!', 'Необходимо выбрать запись для редактирования.');
+        }
+    }
+    
+    function TabDocType_Create() {
+        Ext.net.Mask.show();
+        Ext.net.DirectMethod.request(
+            {
+                url: "/Admin/DocType/CreateNew",
+                params:{
+                    onCloseClientScript: "TabDocType_Refresh();"
+                },
+                success: function (result) { Ext.net.Mask.hide(); },
+                failure: function (errorMessage) { Ext.net.Mask.hide(); Ext.Msg.alert('Ошибка', errorMessage); }
+            });
+    }
+
+
+    function TabDocType_Delete() {
+        var id = TabDocType_GetSelectedId();
+        if (id > 0) {
+            Ext.MessageBox.show({
+                title: 'Подтверждение удаления',
+                msg: 'Удалить выбранную запись из справочника?',
+                buttons: Ext.MessageBox.YESNO,
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: "/Admin/DocType/Delete?id=" + id,
+                            success: function (result) { TabDocType_Refresh(); },
+                            failure: function (errorMessage) { TabDocType_Refresh(); Ext.Msg.alert('Ошибка', errorMessage); }
+                        });
+                    }
+                },
+                icon: Ext.MessageBox.WARNING
+            });
+        }
+        else {
+            Ext.MessageBox.alert('Внимание!', 'Необходимо выбрать запись для удаления.');
+        }
+    }
+
+    
+    function TabDocType_Refresh() {
+        App.TabDocType_grid.setLoading(true);
+        App.TabDocType_store.reload({
+            callback: function () {
+                App.TabDocType_grid.setLoading(false);
+            }
+        });
+    }
+</script>
+
+@(    
+    X.Container()
+        .Layout(LayoutType.Border)
+        .Items(
+
+            X.GridPanel()
+                .ID("TabDocType_grid")
+                .Region(Region.Center)
+                .AutoScroll(true)
+                .RowLines(true)
+                .ColumnLines(true)
+                .Store(X.Store()
+                    .ID("TabDocType_store")
+                    .Model(X.Model()
+                        .IDProperty("DocTypeId")
+                        .Fields(
+                            new ModelField("DocTypeId", ModelFieldType.Int),
+                            new ModelField("DocTypeName")
+                        )
+                    )
+                    .ServerProxy(X.AjaxProxy()
+                        .Url(Url.Action("GetAllItems", "DocType"))
+                        .ActionMethods(am => am.Read = HttpMethod.POST)
+                        .Reader(X.JsonReader().RootProperty("data"))
+                    )
+                )
+                .ColumnModel(
+                    X.Column()
+                        .Text("<b>Вид документа</b>")
+                        .DataIndex("DocTypeName")
+                        .Flex(1)
+                        .MinWidth(140)
+                        .CellWrap(true)
+                        .Filterable(true)
+                        .Filter(X.StringFilter()),
+                    X.Column()
+                        .Text("<b>Кол-во документов</b>")
+                        .DataIndex("DocumentsCount")
+                        .Width(160)
+                        .CellWrap(true)
+                        .Filterable(true)
+                        .Align(Alignment.Center)
+                        .Filter(X.NumberFilter())
+                )
+                .TopBar(
+                    X.Toolbar()
+                        .Items(
+                            X.Button().Icon(Icon.Add)
+                                .Text("Добавить...")
+                                .Hidden(!UserCanEdit)
+                                .Handler("TabDocType_Create()"),
+                            X.Button().Icon(Icon.ApplicationEdit)
+                                .Text("Редактировать")
+                                .Hidden(!UserCanEdit)
+                                .Handler("TabDocType_Edit()"),
+                            X.Button().Icon(Icon.Delete)
+                                .Text("Удалить")
+                                .Hidden(!UserCanEdit)
+                                .Handler("TabDocType_Delete()"),
+                            X.Button().Icon(Icon.ArrowRefresh)
+                                .Text("Обновить")
+                                .Handler("TabDocType_Refresh()")
+                        )
+                )
+                .SelectionModel(
+                    X.RowSelectionModel()
+                )
+                .Listeners(ls =>
+                {
+                    ls.BoxReady.Handler = "TabDocType_Refresh()";
+
+                    if (UserCanEdit)
+                        ls.CellDblClick.Handler = "TabDocType_Edit();";
+                })
+                .Plugins(
+                    X.GridFilters()
+                        .MenuFilterText("Фильтр")
+                )
+        )
+)

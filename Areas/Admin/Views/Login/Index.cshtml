@@ -1,0 +1,115 @@
+﻿@using System;
+@using System.Linq;
+@using Ext.Net;
+@using Ext.Net.MVC;
+@using System.Web;
+@using System.Web.Mvc;
+@using DocWorkflow;
+
+@model Admin.ViewModels.LoginViewModel
+
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_BaseLayout.cshtml";
+    var X = Ext.Net.Html.X();
+}
+
+<script type="text/javascript">
+
+    function Login_CheckLogin() {
+        App.Login_wndLogin.setLoading(true);
+        Ext.net.DirectMethod.request({
+                url: '@Url.Action("CheckLogin")',
+                params: {
+                    Login: App.Login_txbLogin.getValue(),
+                    Password: App.Login_txbPassword.getValue()
+                },
+                success: function (result) {
+                    if (result == "OK")
+                        window.location = '@Url.Action("Index", "Main")';
+                    else {
+                        App.Login_wndLogin.setLoading(false);
+                        Ext.Msg.alert('Ошибка', result);
+                    }
+                },
+                failure: function (errorMessage) {
+                    App.Login_wndLogin.setLoading(false); Ext.Msg.alert('Ошибка', errorMessage);
+                }
+            });
+    }
+
+</script>
+
+
+@(
+
+    /* Форма входа в систему */
+
+    X.Viewport()
+        .Layout(LayoutType.Border)
+        .Items(
+            X.Panel()
+                .Height(160)
+                .Region(Region.North)
+                    .Content(c => @"<div style=""font-size: 40pt; line-height: 40pt;
+                                font-family: arial; 
+                                color: gray; 
+                                margin-left: 25px; margin-top: 30px; 
+                                width: 800px;"">
+                                Система документооборота малого предприятия
+                            </div>"),
+            X.Panel()
+                .Region(Region.Center)
+                .Border(true)
+        )
+)
+
+@(
+        X.Window()
+            .ID("Login_wndLogin")
+            .Title("Вход в систему")
+            .Modal(false)
+            .Closable(false)
+            .Maximizable(false)
+            .Resizable(false)
+            .Floatable(false)
+            .AutoShow(true)
+            .Width(400)
+            .Height(150)
+            .Ghost(false)
+            .Layout(LayoutType.Border)
+            .DefaultButton("Login_btnCheckLogin")
+            .Items(
+                X.Panel()
+                    .Region(Region.Center)
+                    .Layout(LayoutType.Form)
+                    .BodyPadding(8)
+                    .Items(
+
+                        Html.X().ComboBoxFor(m => m.Login)
+                            .ID("Login_txbLogin")
+                            .FieldLabel("Пользователь*")
+                            .Editable(false)
+                            .Items(t =>
+                            {
+                                var users = Model.GetUsersList();
+                                foreach (var u in users)
+                                {
+                                    String text = String.Format("{0} ({1})", u.UserName, u.UserGroup.Name);
+                                    t.Add(new ListItem(text, u.UserLogin));
+                                }
+                            }),
+
+                        Html.X().TextFieldFor(m => m.Password)
+                            .InputType(Ext.Net.InputType.Password)
+                            .ID("Login_txbPassword")
+                            .FieldLabel("Пароль*")
+                    )
+            )
+            .Buttons(
+                X.Button()
+                    .ID("Login_btnCheckLogin")
+                    .Text("Войти")
+                    .PreventDefault(true)
+                    .Handler("Login_CheckLogin")
+            )
+)

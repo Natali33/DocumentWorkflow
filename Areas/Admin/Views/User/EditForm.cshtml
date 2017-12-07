@@ -1,0 +1,112 @@
+﻿@using System;
+@using System.Linq;
+@using Ext.Net;
+@using Ext.Net.MVC;
+@using System.Web;
+@using System.Web.Mvc;
+@using DocWorkflow;
+
+@model DocWorkflow.Areas.Admin.Models.DataModels.User
+
+@{
+    var X = Ext.Net.Html.X();
+    var userGroups = ViewBag.UserGroups;
+    var departments = ViewBag.Departments;
+    bool isNew = ViewBag.IsNew;
+}
+
+
+@(
+    X.Window()
+        .ID("User_window")
+        .Title("Учетная запись пользователя")
+        .Width(400)
+        .Height(350)
+        .Modal(true)
+        .Ghost(false)
+        .Maximizable(false)
+        .CloseAction(CloseAction.Destroy)
+        .Layout(LayoutType.Border)
+        .Items(
+            X.FormPanel()
+                .ID("User_form")
+                .Region(Region.Center)
+                .Layout(LayoutType.Form)
+                .BodyPadding(6)
+                .Items(
+                    Html.X().HiddenFor(m => m.UserId),
+                    Html.X().HiddenFor(m => m.PasswordHash),
+
+                    Html.X().TextFieldFor(m=>m.UserLogin)
+                        .FieldLabel("Логин*")
+                        .ID("User_Login")
+                        .AllowBlank(true),
+
+                    Html.X().TextFieldFor(m => m.UserName)
+                        .FieldLabel("ФИО сотрудника*")
+                        .AllowBlank(true),
+
+                    Html.X().ComboBoxFor(m=>m.UserGroup_UserGroupId)
+                        .FieldLabel("Роль*")
+                        .Editable(false)
+                        .AllowBlank(true)
+                        .Items(t =>
+                        {
+                            foreach(var g in userGroups)
+                            {
+                                t.Add(new ListItem(g.Name, g.UserGroupId));
+                            }
+                        }),
+
+                    Html.X().ComboBoxFor(m => m.DepartmentId)
+                        .FieldLabel("Подразделение*")
+                        .Editable(false)
+                        .AllowBlank(true)
+                        .Items(t =>
+                        {
+                            foreach (var g in departments)
+                            {
+                                t.Add(new ListItem(g.DepartmentName, g.DepartmentId));
+                            }
+                        }),
+
+                    Html.X().TextFieldFor(m => m.Position)
+                        .FieldLabel("Должность*")
+                        .AllowBlank(true),
+
+                    Html.X().CheckboxFor(m=>m.IsActive)
+                        .BoxLabel("Разрешить вход")
+                        .ID("UserForm_IsActive")
+                        .HideLabel(true)
+                ),
+            Html.X().Panel()
+                .Region(Region.South)
+                .Layout(LayoutType.Fit)
+                .Hidden(!isNew)
+                .BodyPadding(6)
+                .BodyStyle("background-color: #ffffd0;")
+                .Items(
+                    Html.X().Label()
+                        .Icon(Icon.Information)
+                        .Html("При создании нового пользователя, для него устанавливается пароль по умолчанию: 123. Пользователь может самостоятельно сменить пароль после входа в систему.")
+                )
+       )
+       .Buttons(
+            X.Button()
+                .Text("Сохранить")
+                .DirectEvents(de =>
+                {
+                    de.Click.Url = Url.Action("Save");
+                    de.Click.FormID = "User_form";
+                    de.Click.EventMask.ShowMask = true;
+                }),
+            X.Button()
+                .Text("Отмена")
+                .Handler("App.User_window.close();")
+       )
+       .Listeners(ls =>
+       {
+           ls.Close.Fn = "function(win){" + ViewBag.OnCloseClientScript + ";}";
+       })
+)
+

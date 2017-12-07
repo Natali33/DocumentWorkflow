@@ -1,0 +1,302 @@
+﻿@using System;
+@using System.Linq;
+@using Ext.Net;
+@using Ext.Net.MVC;
+@using System.Web;
+@using System.Web.Mvc;
+
+@model Admin.ViewModels.MainViewModel
+
+@{
+    var X = Ext.Net.Html.X();
+    bool UserCanEdit = Authentication.UserIsSysadmin || Authentication.UserIsManager;
+
+    String DefaultTaskGroup = (Authentication.UserIsManager) 
+        ? "CreatedByMe"
+        : "ExecuteToMe";
+}
+
+<style type="text/css">
+    .x-btn-pressed {
+        background-color: #054a81 !important;
+        color: #ffffff !important;
+    }
+
+        .x-btn-pressed .x-btn-inner {
+            color: #ffffff !important;
+        }
+</style>
+
+<script type="text/javascript">
+
+    
+    function TabDocument_GetSelectedId() {
+        var sel = App.TabDocument_grid.getSelectionModel().getSelection();
+        if (sel.length > 0)
+            return sel[0].get("DocumentId");
+        else
+            return -1;
+    }
+
+
+    function TabDocument_Edit() {
+        var id = TabDocument_GetSelectedId();
+        if (id > 0) {
+            Ext.net.Mask.show();
+            Ext.net.DirectMethod.request(
+                {
+                    url: "/Admin/Document/OpenExisting",
+                    params: {
+                        id: id,
+                        onCloseClientScript: "TabDocument_Refresh();"
+                    },
+                    success: function (result) { Ext.net.Mask.hide(); },
+                    failure: function (errorMessage) { Ext.net.Mask.hide(); Ext.Msg.alert('Ошибка', errorMessage); }
+                });
+        }
+        else {
+            Ext.MessageBox.alert('Внимание!', 'Необходимо выбрать документ для редактирования.');
+        }
+    }
+    
+    function TabDocument_Create() {
+        Ext.net.Mask.show();
+        Ext.net.DirectMethod.request(
+            {
+                url: "/Admin/Document/CreateNew",
+                params:{
+                    onCloseClientScript: "TabDocument_Refresh();"
+                },
+                success: function (result) { Ext.net.Mask.hide(); },
+                failure: function (errorMessage) { Ext.net.Mask.hide(); Ext.Msg.alert('Ошибка', errorMessage); }
+            });
+    }
+
+
+    function TabDocument_Delete() {
+        var id = TabDocument_GetSelectedId();
+        if (id > 0) {
+            Ext.MessageBox.show({
+                title: 'Подтверждение удаления',
+                msg: 'Удалить выбранный документ?',
+                buttons: Ext.MessageBox.YESNO,
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: "/Admin/Document/Delete?id=" + id,
+                            success: function (result) { TabDocument_Refresh(); },
+                            failure: function (errorMessage) { TabDocument_Refresh(); Ext.Msg.alert('Ошибка', errorMessage); }
+                        });
+                    }
+                },
+                icon: Ext.MessageBox.WARNING
+            });
+        }
+        else {
+            Ext.MessageBox.alert('Внимание!', 'Необходимо выбрать документ для удаления.');
+        }
+    }
+
+    
+    function TabDocument_Refresh() {
+        App.TabDocument_grid.setLoading(true);
+        App.TabDocument_store.reload({
+            params: {
+                taskGroup: App.TabDocument_TaskGroup.getValue()
+            },
+            callback: function () {
+                App.TabDocument_grid.setLoading(false);
+            }
+        });
+    }
+</script>
+
+@(    
+    X.Container()
+        .Layout(LayoutType.Border)
+        .Items(
+
+            X.GridPanel()
+                .ID("TabDocument_grid")
+                .Region(Region.Center)
+                .AutoScroll(true)
+                .RowLines(true)
+                .ColumnLines(true)
+                .Store(X.Store()
+                    .ID("TabDocument_store")
+                    .AutoLoad(false)
+                    .Model(X.Model()
+                        .IDProperty("DocumentId")
+                        .Fields(
+                            new ModelField("DocumentId", ModelFieldType.Int),
+                            new ModelField("DocStatusName"),
+                            new ModelField("DocTypeName"),
+                            new ModelField("DocName"),
+                            new ModelField("Creator"),
+                            new ModelField("Signer"),
+                            new ModelField("Executor"),
+                            new ModelField("CreatorDepartment"),
+                            new ModelField("SignerDepartment"),
+                            new ModelField("ExecutorDepartment"),
+                            new ModelField("DateExecution", ModelFieldType.Date),
+                            new ModelField("DateCreated", ModelFieldType.Date),
+                            new ModelField("DateDone", ModelFieldType.Date)
+                        )
+                    )
+                    .ServerProxy(X.AjaxProxy()
+                        .Url(Url.Action("GetDocumentList"))
+                        .ActionMethods(am => am.Read = HttpMethod.POST)
+                        .Reader(X.JsonReader().RootProperty("data"))
+                    )
+                )
+                .ColumnModel(
+                     X.Column()
+                        .Text("<b>Номер</b>")
+                        .DataIndex("DocumentId")
+                        .Width(80)
+                        .Filterable(true)
+                        .Align(Alignment.Center)
+                        .Filter(X.NumberFilter()),
+                    X.DateColumn()
+                        .Text("<b>Дата</b>")
+                        .DataIndex("DateCreated")
+                        .Width(100)
+                        .Filterable(true)
+                        .Format("dd.MM.yyyy")
+                        .Align(Alignment.Center)
+                        .Filter(X.DateFilter()),
+                    X.Column()
+                        .Text("<b>Тип документа</b>")
+                        .DataIndex("DocTypeName")
+                        .Flex(1)
+                        .MinWidth(100)
+                        .Filterable(true)
+                        .Filter(X.ListFilter()),
+                    X.Column()
+                        .Text("<b>Наименование</b>")
+                        .DataIndex("DocName")
+                        .Flex(1)
+                        .MinWidth(100)
+                        .Filterable(true)
+                        .Filter(X.StringFilter()),
+                    X.Column()
+                        .Text("<b>Создал</b>")
+                        .DataIndex("Creator")
+                        .Flex(1)
+                        .MinWidth(100)
+                        .Filterable(true)
+                        .Filter(X.ListFilter()),
+                    X.Column()
+                        .Text("<b>Подразделение<br/>инициатора</b>")
+                        .DataIndex("CreatorDepartment")
+                        .Flex(1)
+                        .MinWidth(100)
+                        .Hidden(true)
+                        .Filterable(true)
+                        .Filter(X.ListFilter()),
+                    X.Column()
+                        .Text("<b>Подписант</b>")
+                        .DataIndex("Signer")
+                        .Flex(1)
+                        .MinWidth(100)
+                        .Filterable(true)
+                        .Filter(X.ListFilter()),
+                    X.Column()
+                        .Text("<b>Подразделение<br/>подписанта</b>")
+                        .DataIndex("SignerDepartment")
+                        .Flex(1)
+                        .MinWidth(100)
+                        .Hidden(true)
+                        .Filterable(true)
+                        .Filter(X.ListFilter()),
+                    X.Column()
+                        .Text("<b>Исполнитель</b>")
+                        .DataIndex("Executor")
+                        .Flex(1)
+                        .MinWidth(100)
+                        .Filterable(true)
+                        .Filter(X.ListFilter()),
+                    X.Column()
+                        .Text("<b>Подразделение<br/>исполнителя</b>")
+                        .DataIndex("ExecutorDepartment")
+                        .Flex(1)
+                        .MinWidth(100)
+                        .Hidden(true)
+                        .Filterable(true)
+                        .Filter(X.ListFilter()),
+                    X.DateColumn()
+                        .Text("<b>Срок<br/>исполнения</b>")
+                        .DataIndex("DateExecution")
+                        .Width(100)
+                        .Filterable(true)
+                        .Format("dd.MM.yyyy")
+                        .Align(Alignment.Center)
+                        .Filter(X.DateFilter()),
+                    X.Column()
+                        .Text("<b>Статус</b>")
+                        .DataIndex("DocStatusName")
+                        .Width(120)
+                        .Filterable(true)
+                        .Filter(X.ListFilter())
+                )
+                .TopBar(
+                    X.Toolbar()
+                        .Items(
+                            X.Button().Icon(Icon.Add)
+                                .Text("Новый документ...")
+                                .Hidden(!UserCanEdit)
+                                .Handler("TabDocument_Create()"),
+                            X.Button().Icon(Icon.ApplicationEdit)
+                                .Text("Открыть карточку документа")
+                                .Handler("TabDocument_Edit()"),
+                            X.Button().Icon(Icon.Delete)
+                                .Text("Удалить")
+                                .Hidden(!UserCanEdit)
+                                .Handler("TabDocument_Delete()"),
+                            X.Button().Icon(Icon.ArrowRefresh)
+                                .Text("Обновить")
+                                .Handler("TabDocument_Refresh()"),
+                            X.ToolbarFill(),
+                            X.SegmentedButton()
+                                .ID("TabDocument_TaskGroup")
+                                .Vertical(false)
+                                .Value(DefaultTaskGroup)
+                                .Items(
+                                    X.Button()
+                                        .Text("Созданные мной")
+                                        .Flat(true)
+                                        .Value("CreatedByMe")
+                                        .Hidden(!UserCanEdit)
+                                        .Handler("TabDocument_Refresh();"),
+                                    X.Button()
+                                        .Text("Мне на подпись")
+                                        .Flat(true)
+                                        .Value("SignToMe")
+                                        .Handler("TabDocument_Refresh();"),
+                                    X.Button()
+                                        .Text("Мне на исполнение")
+                                        .Flat(true)
+                                        .Value("ExecuteToMe")
+                                        .Handler("TabDocument_Refresh();"),
+                                    X.Button()
+                                        .Text("Все документы")
+                                        .Flat(true)
+                                        .Value("All")
+                                        .Handler("TabDocument_Refresh();")
+                                )
+                        )
+                )
+                .SelectionModel(
+                    X.RowSelectionModel()
+                )
+                .Listeners(ls =>
+                {
+                    ls.BoxReady.Handler = "TabDocument_Refresh()";
+                    ls.CellDblClick.Handler = "TabDocument_Edit();";
+                })
+                .Plugins(
+                    X.GridFilters()
+                        .MenuFilterText("Фильтр")
+                )
+        )
+)

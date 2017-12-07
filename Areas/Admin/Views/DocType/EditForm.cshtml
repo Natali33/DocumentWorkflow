@@ -1,0 +1,58 @@
+﻿@using System;
+@using System.Linq;
+@using Ext.Net;
+@using Ext.Net.MVC;
+@using System.Web;
+@using System.Web.Mvc;
+@using DocWorkflow;
+
+@model DocWorkflow.Areas.Admin.Models.DataModels.DocType
+
+@{
+    var X = Ext.Net.Html.X();
+    bool isNew = ViewBag.IsNew;
+}
+
+
+@(
+    X.Window()
+        .ID("DocType_window")
+        .Title("Вид документа")
+        .Width(400)
+        .Modal(true)
+        .Ghost(false)
+        .Maximizable(false)
+        .CloseAction(CloseAction.Destroy)
+        .Layout(LayoutType.Fit)
+        .Items(
+            X.FormPanel()
+                .ID("DocType_form")
+                .Layout(LayoutType.Form)
+                .BodyPadding(6)
+                .Items(
+                    Html.X().HiddenFor(m => m.DocTypeId),
+
+                    Html.X().TextFieldFor(m => m.DocTypeName)
+                        .FieldLabel("Наименование*")
+                        .AllowBlank(true)
+                )
+       )
+       .Buttons(
+            X.Button()
+                .Text("Сохранить")
+                .DirectEvents(de =>
+                {
+                    de.Click.Url = Url.Action("Save");
+                    de.Click.FormID = "DocType_form";
+                    de.Click.EventMask.ShowMask = true;
+                }),
+            X.Button()
+                .Text("Отмена")
+                .Handler("App.DocType_window.close();")
+       )
+       .Listeners(ls =>
+       {
+           ls.Close.Fn = "function(win){" + ViewBag.OnCloseClientScript + ";}";
+       })
+)
+

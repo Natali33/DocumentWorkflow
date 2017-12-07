@@ -1,0 +1,216 @@
+﻿@using System;
+@using System.Linq;
+@using Ext.Net;
+@using Ext.Net.MVC;
+@using System.Web;
+@using System.Web.Mvc;
+
+@model Admin.ViewModels.MainViewModel
+
+@{
+    var X = Ext.Net.Html.X();
+    bool UserCanEdit = Authentication.UserIsSysadmin;
+}
+
+<script type="text/javascript">
+
+    
+    function TabDepartment_GetSelectedId() {
+        var sel = App.TabDepartment_grid.getSelectionModel().getSelection();
+        if (sel.length > 0)
+            return sel[0].get("DepartmentId");
+        else
+            return -1;
+    }
+
+
+    function TabDepartment_Edit() {
+        var id = TabDepartment_GetSelectedId();
+        if (id > 0) {
+            Ext.net.Mask.show();
+            Ext.net.DirectMethod.request(
+                {
+                    url: "/Admin/Department/OpenExisting",
+                    params: {
+                        id: id,
+                        onCloseClientScript: "TabDepartment_Refresh();"
+                    },
+                    success: function (result) { Ext.net.Mask.hide(); },
+                    failure: function (errorMessage) { Ext.net.Mask.hide(); Ext.Msg.alert('Ошибка', errorMessage); }
+                });
+        }
+        else {
+            Ext.MessageBox.alert('Внимание!', 'Необходимо выбрать запись для редактирования.');
+        }
+    }
+    
+    function TabDepartment_Create() {
+        Ext.net.Mask.show();
+        Ext.net.DirectMethod.request(
+            {
+                url: "/Admin/Department/CreateNew",
+                params:{
+                    onCloseClientScript: "TabDepartment_Refresh();"
+                },
+                success: function (result) { Ext.net.Mask.hide(); },
+                failure: function (errorMessage) { Ext.net.Mask.hide(); Ext.Msg.alert('Ошибка', errorMessage); }
+            });
+    }
+
+
+    function TabDepartment_Delete() {
+        var id = TabDepartment_GetSelectedId();
+        if (id > 0) {
+            Ext.MessageBox.show({
+                title: 'Подтверждение удаления',
+                msg: 'Удалить выбранную запись из справочника?',
+                buttons: Ext.MessageBox.YESNO,
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: "/Admin/Department/Delete?id=" + id,
+                            success: function (result) { TabDepartment_Refresh(); },
+                            failure: function (errorMessage) { TabDepartment_Refresh(); Ext.Msg.alert('Ошибка', errorMessage); }
+                        });
+                    }
+                },
+                icon: Ext.MessageBox.WARNING
+            });
+        }
+        else {
+            Ext.MessageBox.alert('Внимание!', 'Необходимо выбрать запись для удаления.');
+        }
+    }
+
+    
+    function TabDepartment_Refresh() {
+        App.TabDepartment_grid.setLoading(true);
+        App.TabDepartment_store.reload({
+            callback: function () {
+                App.TabDepartment_grid.setLoading(false);
+            }
+        });
+    }
+</script>
+
+@(    
+    X.Container()
+        .Layout(LayoutType.Border)
+        .Items(
+
+            X.GridPanel()
+                .ID("TabDepartment_grid")
+                .Region(Region.Center)
+                .AutoScroll(true)
+                .RowLines(true)
+                .ColumnLines(true)
+                .Store(X.Store()
+                    .ID("TabDepartment_store")
+                    .Model(X.Model()
+                        .IDProperty("DepartmentId")
+                        .Fields(
+                            new ModelField("DepartmentId", ModelFieldType.Int),
+                            new ModelField("DepartmentName"),
+                            new ModelField("DepartmentHead"),
+                            new ModelField("PersonsCount", ModelFieldType.Int),
+                            new ModelField("QtyDrafts", ModelFieldType.Int),
+                            new ModelField("QtyWaitingForSign", ModelFieldType.Int),
+                            new ModelField("QtyExecuting", ModelFieldType.Int)
+                        )
+                    )
+                    .ServerProxy(X.AjaxProxy()
+                        .Url(Url.Action("GetDepartmentList"))
+                        .ActionMethods(am => am.Read = HttpMethod.POST)
+                        .Reader(X.JsonReader().RootProperty("data"))
+                    )
+                )
+                .ColumnModel(
+                    X.Column()
+                        .Text("<b>Наименование подразделения</b>")
+                        .DataIndex("DepartmentName")
+                        .Flex(1)
+                        .MinWidth(140)
+                        .CellWrap(true)
+                        .Filterable(true)
+                        .Filter(X.StringFilter()),
+                    X.Column()
+                        .Text("<b>ФИО руководителя</b>")
+                        .DataIndex("DepartmentHead")
+                        .Flex(1)
+                        .MinWidth(140)
+                        .CellWrap(true)
+                        .Filterable(true)
+                        .Filter(X.StringFilter()),
+                    X.Column()
+                        .Text("<b>Количество<br/>сотрудников</b>")
+                        .DataIndex("PersonsCount")
+                        .Width(120)
+                        .CellWrap(true)
+                        .Filterable(true)
+                        .Align(Alignment.Center)
+                        .Filter(X.NumberFilter()),
+                    X.Column()
+                        .Text("<b>Количество документов</b>")
+                        .MenuDisabled(true)
+                        .Columns(
+                            X.Column()
+                                .Text("<b>Черновики</b>")
+                                .DataIndex("QtyDrafts")
+                                .Width(140)
+                                .CellWrap(true)
+                                .Filterable(true)
+                                .Align(Alignment.Center)
+                                .Filter(X.NumberFilter()),
+                            X.Column()
+                                .Text("<b>На подписании</b>")
+                                .DataIndex("QtyWaitingForSign")
+                                .Width(140)
+                                .CellWrap(true)
+                                .Filterable(true)
+                                .Align(Alignment.Center)
+                                .Filter(X.NumberFilter()),
+                            X.Column()
+                                .Text("<b>На исполнении</b>")
+                                .DataIndex("QtyExecuting")
+                                .Width(140)
+                                .CellWrap(true)
+                                .Filterable(true)
+                                .Align(Alignment.Center)
+                                .Filter(X.NumberFilter())
+                        )
+                )
+                .TopBar(
+                    X.Toolbar()
+                        .Items(
+                            X.Button().Icon(Icon.Add)
+                                .Text("Новое подразделение...")
+                                .Hidden(!UserCanEdit)
+                                .Handler("TabDepartment_Create()"),
+                            X.Button().Icon(Icon.ApplicationEdit)
+                                .Text("Редактировать")
+                                .Hidden(!UserCanEdit)
+                                .Handler("TabDepartment_Edit()"),
+                            X.Button().Icon(Icon.Delete)
+                                .Text("Удалить")
+                                .Hidden(!UserCanEdit)
+                                .Handler("TabDepartment_Delete()"),
+                            X.Button().Icon(Icon.ArrowRefresh)
+                                .Text("Обновить")
+                                .Handler("TabDepartment_Refresh()")
+                        )
+                )
+                .SelectionModel(
+                    X.RowSelectionModel()
+                )
+                .Listeners(ls =>
+                {
+                    ls.BoxReady.Handler = "TabDepartment_Refresh()";
+                    if (UserCanEdit)
+                        ls.CellDblClick.Handler = "TabDepartment_Edit();";
+                })
+                .Plugins(
+                    X.GridFilters()
+                        .MenuFilterText("Фильтр")
+                )
+        )
+)

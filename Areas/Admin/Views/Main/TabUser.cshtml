@@ -1,0 +1,206 @@
+﻿@using System;
+@using System.Linq;
+@using Ext.Net;
+@using Ext.Net.MVC;
+@using System.Web;
+@using System.Web.Mvc;
+
+@model Admin.ViewModels.MainViewModel
+
+@{
+    var X = Ext.Net.Html.X();
+    bool UserCanEdit = Authentication.UserIsSysadmin;
+}
+
+<script type="text/javascript">
+
+    
+    function TabUser_GetSelectedId() {
+        var sel = App.TabUser_grid.getSelectionModel().getSelection();
+        if (sel.length > 0)
+            return sel[0].get("UserId");
+        else
+            return -1;
+    }
+
+
+    function TabUser_Edit() {
+        var id = TabUser_GetSelectedId();
+        if (id > 0) {
+            Ext.net.Mask.show();
+            Ext.net.DirectMethod.request(
+                {
+                    url: "/Admin/User/OpenExisting",
+                    params: {
+                        id: id,
+                        onCloseClientScript: "TabUser_Refresh();"
+                    },
+                    success: function (result) { Ext.net.Mask.hide(); },
+                    failure: function (errorMessage) { Ext.net.Mask.hide(); Ext.Msg.alert('Ошибка', errorMessage); }
+                });
+        }
+        else {
+            Ext.MessageBox.alert('Внимание!', 'Необходимо выбрать элемент для редактирования.');
+        }
+    }
+    
+    function TabUser_Create() {
+        Ext.net.Mask.show();
+        Ext.net.DirectMethod.request(
+            {
+                url: "/Admin/User/CreateNew",
+                params:{
+                    onCloseClientScript: "TabUser_Refresh();"
+                },
+                success: function (result) { Ext.net.Mask.hide(); },
+                failure: function (errorMessage) { Ext.net.Mask.hide(); Ext.Msg.alert('Ошибка', errorMessage); }
+            });
+    }
+
+
+    function TabUser_Delete() {
+        var id = TabUser_GetSelectedId();
+        if (id > 0) {
+            Ext.MessageBox.show({
+                title: 'Подтверждение удаления',
+                msg: 'Удалить выбранного пользователя?',
+                buttons: Ext.MessageBox.YESNO,
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: "/Admin/User/Delete?id=" + id,
+                            success: function (result) { TabUser_Refresh(); },
+                            failure: function (errorMessage) { TabUser_Refresh(); Ext.Msg.alert('Ошибка', errorMessage); }
+                        });
+                    }
+                },
+                icon: Ext.MessageBox.WARNING
+            });
+        }
+        else {
+            Ext.MessageBox.alert('Внимание!', 'Необходимо выбрать элемент для удаления.');
+        }
+    }
+
+    
+    function TabUser_Refresh() {
+        App.TabUser_grid.setLoading(true);
+        App.TabUser_store.reload({
+            callback: function () {
+                App.TabUser_grid.setLoading(false);
+            }
+        });
+    }
+</script>
+
+@(    
+    X.Container()
+        .Layout(LayoutType.Border)
+        .Items(
+
+            X.GridPanel()
+                .ID("TabUser_grid")
+                .Region(Region.Center)
+                .AutoScroll(true)
+                .RowLines(true)
+                .ColumnLines(true)
+                .Store(X.Store()
+                    .ID("TabUser_store")
+                    .Model(X.Model()
+                        .IDProperty("UserId")
+                        .Fields(
+                            new ModelField("UserId", ModelFieldType.Int),
+                            new ModelField("UserLogin"),
+                            new ModelField("UserName"),
+                            new ModelField("UserGroupName"),
+                            new ModelField("DepartmentName"),
+                            new ModelField("Position"),
+                            new ModelField("IsActive", ModelFieldType.Boolean)
+                        )
+                    )
+                    .ServerProxy(X.AjaxProxy()
+                        .Url(Url.Action("GetAllItems", "User"))
+                        .ActionMethods(am => am.Read = HttpMethod.POST)
+                        .Reader(X.JsonReader().RootProperty("data"))
+                    )
+                )
+                .ColumnModel(
+                    X.Column()
+                        .Text("<b>Логин</b>")
+                        .DataIndex("UserLogin")
+                        .Flex(1)
+                        .CellWrap(true)
+                        .Filterable(true)
+                        .Filter(X.StringFilter()),
+                    X.Column()
+                        .Text("<b>ФИО</b>")
+                        .DataIndex("UserName")
+                        .Flex(1)
+                        .CellWrap(true)
+                        .Filterable(true)
+                        .Filter(X.StringFilter()),
+                    X.Column()
+                        .Text("<b>Роль</b>")
+                        .DataIndex("UserGroupName")
+                        .Flex(1)
+                        .CellWrap(true)
+                        .Filterable(true)
+                        .Filter(X.ListFilter()),
+                    X.Column()
+                        .Text("<b>Подразделение</b>")
+                        .DataIndex("DepartmentName")
+                        .Flex(1)
+                        .CellWrap(true)
+                        .Filterable(true)
+                        .Filter(X.ListFilter()),
+                    X.Column()
+                        .Text("<b>Должность</b>")
+                        .DataIndex("Position")
+                        .Flex(1)
+                        .CellWrap(true)
+                        .Filterable(true)
+                        .Filter(X.ListFilter()),
+                    X.CheckColumn()
+                        .Text("<b>Разрешить вход</b>")
+                        .DataIndex("IsActive")
+                        .Width(130)
+                        .Editable(false)
+                        .Filterable(true)
+                        .Filter(X.BooleanFilter().YesText("Да").NoText("Нет"))
+                )
+                .TopBar(
+                    X.Toolbar()
+                        .Items(
+                            X.Button().Icon(Icon.Add)
+                                .Text("Новый пользователь...")
+                                .Hidden(!UserCanEdit)
+                                .Handler("TabUser_Create()"),
+                            X.Button().Icon(Icon.ApplicationEdit)
+                                .Text("Редактировать")
+                                .Hidden(!UserCanEdit)
+                                .Handler("TabUser_Edit()"),
+                            X.Button().Icon(Icon.Delete)
+                                .Text("Удалить")
+                                .Hidden(!UserCanEdit)
+                                .Handler("TabUser_Delete()"),
+                            X.Button().Icon(Icon.ArrowRefresh)
+                                .Text("Обновить")
+                                .Handler("TabUser_Refresh()")
+                        )
+                )
+                .SelectionModel(
+                    X.RowSelectionModel()
+                )
+                .Listeners(ls =>
+                {
+                    ls.BoxReady.Handler = "TabUser_Refresh()";
+
+                    if (UserCanEdit)
+                        ls.CellDblClick.Handler = "TabUser_Edit();";
+                })
+                .Plugins(
+                    X.GridFilters()
+                        .MenuFilterText("Фильтр")
+                )
+        )
+)

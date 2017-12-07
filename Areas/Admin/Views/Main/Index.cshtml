@@ -1,0 +1,97 @@
+﻿@using System;
+@using System.Linq;
+@using Ext.Net;
+@using Ext.Net.MVC;
+@using System.Web;
+@using System.Web.Mvc;
+@using DocWorkflow;
+
+@model Admin.ViewModels.MainViewModel
+
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_BaseLayout.cshtml";
+    var X = Ext.Net.Html.X();
+}
+
+<script type="text/javascript">
+
+    /* событие переключения вкладок */
+    function MainViewTabChange(sender, activePanel) {        
+    }
+
+
+    /* отображение формы изменения пароля */
+    function ChangePassword() {
+        Ext.net.Mask.show();
+        Ext.net.DirectMethod.request({
+            url: "/Admin/ChangePasswordForm/ShowForm",
+            success: function (result) { Ext.net.Mask.hide(); },
+            failure: function (errorMessage) { Ext.net.Mask.hide(); Ext.Msg.alert('Ошибка', errorMessage); }
+        });
+    }
+
+    function Logout() {
+        window.location = '@Url.Action("Logout", "Login")';
+    }
+
+</script>
+
+
+@(X.Viewport()
+        .Layout(LayoutType.Border)
+        .Items(
+            X.TabPanel()
+                .ActiveTabIndex(0)
+                .Region(Region.Center)
+                .Items(
+                    X.Panel()
+                        .ID("tabDocument")
+                        .Title("Документы")
+                        .Layout(LayoutType.Fit)
+                        .ItemsFromPage(this, "TabDocument.cshtml"),
+                    X.Panel()
+                        .ID("tabDocType")
+                        .Title("Виды документов")
+                        .Layout(LayoutType.Fit)
+                        .Hidden(!Authentication.UserIsSysadmin)
+                        .ItemsFromPage(this, "TabDocType.cshtml"),
+                    X.Panel()
+                        .ID("tabDepartment")
+                        .Title("Подразделения")
+                        .Layout(LayoutType.Fit)
+                        .Hidden(!Authentication.UserIsSysadmin && !Authentication.UserIsManager)
+                        .ItemsFromPage(this, "TabDepartment.cshtml"),
+                    X.Panel()
+                        .ID("tabUser")
+                        .Title("Пользователи")
+                        .Layout(LayoutType.Fit)
+                        .Hidden(!Authentication.UserIsSysadmin)
+                        .ItemsFromPage(this, "TabUser.cshtml")
+                )
+                .TabBarConfig(
+                    X.TabBar()
+                        .Items(
+                            X.ToolbarFill(),
+                            X.Button()
+                                .Text(Model.UserAuthorizationStatus)
+                                .Flat(true)
+                                .Icon(Icon.Cog)
+                                .Menu(
+                                    X.Menu()
+                                        .Items(
+                                            X.MenuItem()
+                                                .Text("Сменить пароль...")
+                                                .Handler("ChangePassword();"),
+                                            X.MenuItem()
+                                                .Text("Выйти из системы")
+                                                .Handler("Logout();")
+                                        )
+                                )
+                        )
+                )
+                .Listeners(ls =>
+                {
+                        ls.TabChange.Fn = "MainViewTabChange";
+                })
+        )
+)

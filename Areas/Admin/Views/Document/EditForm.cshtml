@@ -1,0 +1,281 @@
+﻿@using System;
+@using System.Linq;
+@using Ext.Net;
+@using Ext.Net.MVC;
+@using System.Web;
+@using System.Web.Mvc;
+@using DocWorkflow.Areas.Admin.Models.DataModels;
+@using DocWorkflow;
+
+@model DocWorkflow.Areas.Admin.Models.DataModels.Document
+
+@{
+    var X = Ext.Net.Html.X();
+    bool isNew = ViewBag.IsNew;
+
+    String Title = "";
+    if (isNew)
+    {
+        Title = String.Format("Новый документ");
+    }
+    else
+    {
+        Title = String.Format("Документ №{0} [{1}]", Model.DocumentId.ToString("D6"), Model.DocStatus.DocStatusName);
+    }
+
+    List<User> UsersList = ViewBag.UsersList;
+    List<DocType> DocTypeList = ViewBag.DocTypeList;
+    DocAttachment attachment = Model.DocAttachment.FirstOrDefault();
+    String AttachmentFileName = (attachment != null) ? attachment.FileName : "";
+}
+
+
+<script type="text/javascript">
+
+    function Document_AttachmentDownload() {
+        var url = "@(Url.Action("DownloadAttachment", new { documentId = Model.DocumentId }))";
+        window.open(url);
+    }
+
+</script>
+
+@(
+    X.Window()
+        .ID("Document_window")
+        .Title(Title)
+        .Modal(true)
+        .Ghost(false)
+        .Maximizable(true)
+        .Width(800)
+        .Height(550)
+        .CloseAction(CloseAction.Destroy)
+        .Layout(LayoutType.Fit)
+        .Items(
+            X.FormPanel()
+                .ID("Document_form")
+                .Layout(LayoutType.Fit)
+                .BodyPadding(6)
+                .Items(
+
+                    Html.X().TabPanel()
+                        .Items(
+                            Html.X().Panel()
+                                .Title("Основные данные")
+                                .Layout(LayoutType.Form)
+                                .AutoScroll(true)
+                                .Items(
+                                    Html.X().HiddenFor(m => m.DocumentId),
+                                    Html.X().HiddenFor(m => m.DocStatusId),
+
+                                    Html.X().FieldContainer()
+                                        .FieldLabel("Номер*")
+                                        .Hidden(isNew)
+                                        .Layout(LayoutType.HBox)
+                                        .Items(
+                                            Html.X().TextField()
+                                                .HideLabel(true)
+                                                .Text(Model.DocumentId.ToString())
+                                                .ReadOnly(true)
+                                        ),
+
+                                    Html.X().FieldContainer()
+                                        .FieldLabel("Дата*")
+                                        .Layout(LayoutType.HBox)
+                                        .Items(
+                                            Html.X().DateFieldFor(m => m.DateCreated)
+                                                .HideLabel(true)
+                                                .AllowBlank(true)
+                                                .ReadOnly(true)
+                                                .StartDay(1)
+                                        ),
+
+                                    Html.X().ComboBoxFor(m => m.DocTypeId)
+                                        .FieldLabel("Вид документа*")
+                                        .Editable(false)
+                                        .AllowBlank(true)
+                                        .ReadOnly(!Model.CanEdit)
+                                        .Items(t =>
+                                        {
+                                            foreach (var g in DocTypeList)
+                                            {
+                                                t.Add(new ListItem(g.DocTypeName, g.DocTypeId));
+                                            }
+                                        }),
+
+                                    Html.X().TextFieldFor(m => m.DocName)
+                                        .FieldLabel("Наименование*")
+                                        .AllowBlank(true)
+                                        .ReadOnly(!Model.CanEdit),
+
+                                    Html.X().FieldContainer()
+                                        .FieldLabel("Скан-копия")
+                                        .Layout(LayoutType.HBox)
+                                        .Items(
+                                            Html.X().FileUploadField()
+                                                .ID("Document_Attachment")
+                                                .HideLabel(true)
+                                                .Width(400)
+                                                .ButtonText("Прикрепить...")
+                                                .Text(AttachmentFileName)
+                                                .Hidden(!Model.CanEdit),
+                                            Html.X().TextField()
+                                                .ReadOnly(true)
+                                                .Width(400)
+                                                .Text(AttachmentFileName)
+                                                .EmptyText("Скан-копия не прикреплена")
+                                                .Hidden(Model.CanEdit),
+                                            Html.X().Button()
+                                                .Text("Скачать")
+                                                .MarginSpec("0 0 0 4")
+                                                .Hidden(String.IsNullOrEmpty(AttachmentFileName))
+                                                .Handler("Document_AttachmentDownload();")
+                                        ),
+
+                                    Html.X().Panel().Height(16),
+
+                                    Html.X().ComboBoxFor(m => m.CreatorId)
+                                        .FieldLabel("Создал*")
+                                        .Editable(false)
+                                        .AllowBlank(true)
+                                        .ReadOnly(true)
+                                        .Items(t =>
+                                        {
+                                            foreach (var g in UsersList)
+                                            {
+                                                String name = String.Format("{0} ({1}, {2})", g.UserName, g.Department.DepartmentName, g.Position);
+                                                t.Add(new ListItem(name, g.UserId));
+                                            }
+                                        }),
+
+                                    Html.X().ComboBoxFor(m => m.SignerId)
+                                        .FieldLabel("Подписант*")
+                                        .Editable(false)
+                                        .AllowBlank(true)
+                                        .ReadOnly(!Model.CanEdit)
+                                        .Items(t =>
+                                        {
+                                            foreach (var g in UsersList)
+                                            {
+                                                String name = String.Format("{0} ({1}, {2})", g.UserName, g.Department.DepartmentName, g.Position);
+                                                t.Add(new ListItem(name, g.UserId));
+                                            }
+                                        }),
+
+                                    Html.X().ComboBoxFor(m => m.ExecutorId)
+                                        .FieldLabel("Исполнитель*")
+                                        .Editable(false)
+                                        .AllowBlank(true)
+                                        .ReadOnly(!Model.CanEdit)
+                                        .Items(t =>
+                                        {
+                                            foreach (var g in UsersList)
+                                            {
+                                                String name = String.Format("{0} ({1}, {2})", g.UserName, g.Department.DepartmentName, g.Position);
+                                                t.Add(new ListItem(name, g.UserId));
+                                            }
+                                        }),
+
+                                    Html.X().Panel().Height(16),
+
+                                    Html.X().FieldContainer()
+                                        .FieldLabel("Срок исполнения*")
+                                        .Layout(LayoutType.HBox)
+                                        .Items(
+                                            Html.X().DateFieldFor(m => m.DateExecution)
+                                                .HideLabel(true)
+                                                .AllowBlank(true)
+                                                .StartDay(1)
+                                                .ReadOnly(!Model.CanEdit)
+                                        ),
+
+                                    Html.X().FieldContainer()
+                                        .FieldLabel("Исполнено")
+                                        .Layout(LayoutType.HBox)
+                                        .Items(
+                                            Html.X().DateFieldFor(m => m.DateDone)                                                
+                                                .HideLabel(true)
+                                                .AllowBlank(true)
+                                                .StartDay(1)
+                                                .ReadOnly(true)
+                                        ),
+
+                                    Html.X().TextAreaFor(m => m.CancellationNote)
+                                        .FieldLabel("Комментарий")
+                                        .EmptyText("Введите сюда комментарий к решению, если вы собираетесь отменить документ.")
+                                        .AllowBlank(true)
+                                        .ReadOnly(!Model.CanCancel)
+                                        .Hidden(!Model.CanCancel && String.IsNullOrEmpty(Model.CancellationNote))
+                                ),
+
+                            Html.X().Panel()
+                                .Title("Текст документа")
+                                .Layout(LayoutType.Fit)
+                                .Items(
+                                    Html.X().HtmlEditorFor(m=>m.Content)
+                                        .HideLabel(true)
+                                        .ReadOnly(!Model.CanEdit)
+                                )
+                        )
+                )
+       )
+       .Buttons(
+            X.Button()
+                .Text("Сохранить как черновик")
+                .Hidden(!Model.CanSaveAsDraft)
+                .DirectEvents(de =>
+                {
+                    de.Click.Url = Url.Action("SaveAsDraft");
+                    de.Click.FormID = "Document_form";
+                    de.Click.EventMask.ShowMask = true;
+                }),
+            X.Button()
+                .Text("Сохранить и опубликовать")
+                .Hidden(!Model.CanPublication)
+                .Icon(Icon.Accept)
+                .DirectEvents(de =>
+                {
+                    de.Click.Url = Url.Action("SaveAndPublicate");
+                    de.Click.FormID = "Document_form";
+                    de.Click.EventMask.ShowMask = true;
+                }),
+            X.Button()
+                .Text("Подписать")
+                .Hidden(!Model.CanSign)
+                .Icon(Icon.Accept)
+                .DirectEvents(de =>
+                {
+                    de.Click.Url = Url.Action("Sign");
+                    de.Click.FormID = "Document_form";
+                    de.Click.EventMask.ShowMask = true;
+                }),
+            X.Button()
+                .Text("Отметить исполнение документа")
+                .Hidden(!Model.CanDone)
+                .Icon(Icon.Accept)
+                .DirectEvents(de =>
+                {
+                    de.Click.Url = Url.Action("SetDone");
+                    de.Click.FormID = "Document_form";
+                    de.Click.EventMask.ShowMask = true;
+                }),
+            X.Button()
+                .Text("Отменить документ")
+                .Hidden(!Model.CanCancel)
+                .Icon(Icon.Cancel)
+                .DirectEvents(de =>
+                {
+                    de.Click.Url = Url.Action("SetCancelled");
+                    de.Click.FormID = "Document_form";
+                    de.Click.EventMask.ShowMask = true;
+                }),
+            X.Button()
+                .Text("Отмена")
+                .Handler("App.Document_window.close();")
+                .Flat(true)
+       )
+       .Listeners(ls =>
+       {
+           ls.Close.Fn = "function(win){" + ViewBag.OnCloseClientScript + ";}";
+       })
+)
+

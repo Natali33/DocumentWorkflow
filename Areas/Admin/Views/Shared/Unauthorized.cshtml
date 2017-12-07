@@ -1,0 +1,26 @@
+﻿@using DocWorkflow;
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Недостаточно прав доступа</title>
+</head>
+<body>
+
+    <h1 style="color: red">Недостаточно прав доступа</h1>
+
+    <p>
+        У текущего пользователя @(Authentication.User.UserLogin) недостаточно прав доступа к системе. Для получения доступа к системе обратитесь к системному администратору.
+    </p>   
+
+    <p>
+        <input type="button" onclick="window.location.href = '/';" value="Попробовать снова" />        
+    </p>
+
+</body>
+</html>
+

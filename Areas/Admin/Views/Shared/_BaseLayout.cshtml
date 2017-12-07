@@ -1,0 +1,19 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>ИС документооборота малого предприятия</title>
+    <link rel="shortcut icon" href="/favicon.ico" />
+</head>
+<body>
+      @Html.X().ResourceManager().StartupMask(new StartupMask()
+         {
+             Message="Загрузка"
+         })
+      @RenderBody()
+</body>
+</html>
