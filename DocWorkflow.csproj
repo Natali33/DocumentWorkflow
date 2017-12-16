@@ -134,7 +134,6 @@
     <Compile Include="Areas\Admin\Controllers\DocTypeController.cs" />
     <Compile Include="Areas\Admin\Controllers\DepartmentController.cs" />
     <Compile Include="Areas\Admin\Models\DataModels\Department.cs" />
-    <Compile Include="Areas\Admin\Models\DataModels\DocAttachment.cs" />
     <Compile Include="Areas\Admin\Models\DataModels\DocStatus.cs" />
     <Compile Include="Areas\Admin\Models\DataModels\DocType.cs" />
     <Compile Include="Areas\Admin\Models\DataModels\Document.cs" />

@@ -25,8 +25,6 @@
 
     List<User> UsersList = ViewBag.UsersList;
     List<DocType> DocTypeList = ViewBag.DocTypeList;
-    DocAttachment attachment = Model.DocAttachment.FirstOrDefault();
-    String AttachmentFileName = (attachment != null) ? attachment.FileName : "";
 }
 
 
@@ -106,30 +104,6 @@
                                         .FieldLabel("Наименование*")
                                         .AllowBlank(true)
                                         .ReadOnly(!Model.CanEdit),
-
-                                    Html.X().FieldContainer()
-                                        .FieldLabel("Скан-копия")
-                                        .Layout(LayoutType.HBox)
-                                        .Items(
-                                            Html.X().FileUploadField()
-                                                .ID("Document_Attachment")
-                                                .HideLabel(true)
-                                                .Width(400)
-                                                .ButtonText("Прикрепить...")
-                                                .Text(AttachmentFileName)
-                                                .Hidden(!Model.CanEdit),
-                                            Html.X().TextField()
-                                                .ReadOnly(true)
-                                                .Width(400)
-                                                .Text(AttachmentFileName)
-                                                .EmptyText("Скан-копия не прикреплена")
-                                                .Hidden(Model.CanEdit),
-                                            Html.X().Button()
-                                                .Text("Скачать")
-                                                .MarginSpec("0 0 0 4")
-                                                .Hidden(String.IsNullOrEmpty(AttachmentFileName))
-                                                .Handler("Document_AttachmentDownload();")
-                                        ),
 
                                     Html.X().Panel().Height(16),
 

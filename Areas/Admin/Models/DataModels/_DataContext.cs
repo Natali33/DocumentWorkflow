@@ -102,7 +102,6 @@
         }
 
         public virtual DbSet<Department> Department { get; set; }
-        public virtual DbSet<DocAttachment> DocAttachment { get; set; }
         public virtual DbSet<DocStatus> DocStatus { get; set; }
         public virtual DbSet<DocType> DocType { get; set; }
         public virtual DbSet<Document> Document { get; set; }

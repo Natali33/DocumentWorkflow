@@ -15,8 +15,7 @@ namespace DocWorkflow.Areas.Admin.Models.DataModels
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         public Document()
-        {
-            DocAttachment = new HashSet<DocAttachment>();
+        {            
         }
 
         public int DocumentId { get; set; }
@@ -44,9 +43,6 @@ namespace DocWorkflow.Areas.Admin.Models.DataModels
         public DateTime DateCreated { get; set; }
 
         public string CancellationNote { get; set; }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<DocAttachment> DocAttachment { get; set; }
 
         public virtual DocStatus DocStatus { get; set; }
 

@@ -58,7 +58,6 @@ namespace Admin.Controllers
             Document model = ctx.Document
                 .Include(t => t.DocStatus)
                 .Include(t => t.DocType)
-                .Include(t => t.DocAttachment)
                 .Include(t => t.Creator)
                 .Include(t => t.Signer)
                 .Include(t => t.Executor)
@@ -171,7 +170,6 @@ namespace Admin.Controllers
         public ActionResult SaveAsDraft(Document model)
         {
             DirectResult result = this.Direct();
-            result.IsUpload = CheckAttachmentExists();
 
             try
             {
@@ -201,7 +199,6 @@ namespace Admin.Controllers
         public ActionResult SaveAndPublicate(Document model)
         {
             DirectResult result = this.Direct();
-            result.IsUpload = CheckAttachmentExists();
 
             try
             {
@@ -338,18 +335,6 @@ namespace Admin.Controllers
                 return false;
             }
 
-            bool attachmentExists = CheckAttachmentExists();
-
-            if (attachmentExists)
-            {
-                msg = ValidateAttachment();
-                if (!String.IsNullOrEmpty(msg))
-                {
-                    X.Msg.Alert("Ошибка", msg).Show();
-                    return false;
-                }
-            }
-
             DataContext ctx = new DataContext();
             Document item = ctx.Document.Find(model.DocumentId);
             if (item == null)
@@ -375,101 +360,7 @@ namespace Admin.Controllers
 
             ctx.SaveChanges();
 
-            if (attachmentExists)
-            {
-                UploadAttachment(model, ctx);
-                ctx.SaveChanges();
-            }
-
             return true;
-        }
-
-
-        /// <summary>
-        /// Проверка, был ли прикреплен файл
-        /// </summary>
-        /// <returns></returns>
-        private bool CheckAttachmentExists()
-        {
-            return (GetPostedAttachment() != null);
-        }
-
-
-        /// <summary>
-        /// Проверка корректности прикрепленного файла
-        /// </summary>
-        /// <returns></returns>
-        private String ValidateAttachment()
-        {
-            const int maxFileSizeMb = 10;
-
-            DocAttachment attachment = GetPostedAttachment();
-
-            if (attachment.FileData.Length / 1024.0 / 1024.0 > maxFileSizeMb)
-                return String.Format("Размер прикрепляемого файла должен быть не больше {0} МБ.");
-
-            return "";
-        }
-
-
-        /// <summary>
-        /// Прикрепление файла
-        /// </summary>
-        /// <param name="model"></param>
-        /// <param name="ctx"></param>
-        private void UploadAttachment(Document model, DataContext ctx)
-        {
-            DocAttachment attachment = GetPostedAttachment();
-            attachment.DocumentId = model.DocumentId;
-
-            ctx.DocAttachment.RemoveRange(ctx.DocAttachment.Where(t => t.DocumentId == model.DocumentId));
-            ctx.DocAttachment.Add(attachment);
-        }
-
-
-        /// <summary>
-        /// Получение файла, прикрепленного через форму.
-        /// Возвращает null если файл не прикреплен
-        /// </summary>
-        /// <returns></returns>
-        private DocAttachment GetPostedAttachment()
-        {
-            FileUploadField fld = this.GetCmp<FileUploadField>("Document_Attachment");
-            if (fld.HasFile)
-            {
-                return new DocAttachment()
-                {
-                    FileData = fld.FileBytes,
-                    FileName = Path.GetFileName(fld.FileName)
-                };
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-
-        /// <summary>
-        /// Скачивание прикрепленного файла
-        /// </summary>
-        /// <param name="documentId"></param>
-        /// <returns></returns>
-        [HttpGet]
-        public FileResult DownloadAttachment(int documentId)
-        {
-            using (DataContext ctx = new DataContext())
-            {
-                DocAttachment attachment = ctx.DocAttachment.Where(t => t.DocumentId == documentId).FirstOrDefault();
-                if (attachment != null)
-                {
-                    return this.File(attachment.FileData, "application/octet-stream", attachment.FileName);
-                }
-                else
-                {
-                    throw new Exception("Прикрепленный файл не существует.");
-                }
-            }
         }
     }
 }
