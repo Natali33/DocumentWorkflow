@@ -144,10 +144,6 @@
                                 .Text("Добавить...")
                                 .Hidden(!UserCanEdit)
                                 .Handler("TabDocType_Create()"),
-                            X.Button().Icon(Icon.ApplicationEdit)
-                                .Text("Редактировать")
-                                .Hidden(!UserCanEdit)
-                                .Handler("TabDocType_Edit()"),
                             X.Button().Icon(Icon.Delete)
                                 .Text("Удалить")
                                 .Hidden(!UserCanEdit)

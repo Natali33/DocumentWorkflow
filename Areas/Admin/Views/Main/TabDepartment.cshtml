@@ -186,10 +186,6 @@
                                 .Text("Новое подразделение...")
                                 .Hidden(!UserCanEdit)
                                 .Handler("TabDepartment_Create()"),
-                            X.Button().Icon(Icon.ApplicationEdit)
-                                .Text("Редактировать")
-                                .Hidden(!UserCanEdit)
-                                .Handler("TabDepartment_Edit()"),
                             X.Button().Icon(Icon.Delete)
                                 .Text("Удалить")
                                 .Hidden(!UserCanEdit)

@@ -246,9 +246,6 @@
                                 .Text("Новый документ...")
                                 .Hidden(!UserCanEdit)
                                 .Handler("TabDocument_Create()"),
-                            X.Button().Icon(Icon.ApplicationEdit)
-                                .Text("Открыть карточку документа")
-                                .Handler("TabDocument_Edit()"),
                             X.Button().Icon(Icon.Delete)
                                 .Text("Удалить")
                                 .Hidden(!UserCanEdit)

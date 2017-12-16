@@ -175,10 +175,6 @@
                                 .Text("Новый пользователь...")
                                 .Hidden(!UserCanEdit)
                                 .Handler("TabUser_Create()"),
-                            X.Button().Icon(Icon.ApplicationEdit)
-                                .Text("Редактировать")
-                                .Hidden(!UserCanEdit)
-                                .Handler("TabUser_Edit()"),
                             X.Button().Icon(Icon.Delete)
                                 .Text("Удалить")
                                 .Hidden(!UserCanEdit)
